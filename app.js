@@ -446,3 +446,98 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+//Parte Comentarioss - funcionando
+
+function toggleComentarios(postId) {
+    document.getElementById("coments-" + postId).classList.toggle("escondido");
+}
+
+async function criarComentario(idPost) {
+    try {
+        let texto = document.getElementById("textoComent-" + idPost).value.trim();
+        if (!texto) {
+            throw new Error("Digite um comentário.");
+        }
+
+        let resposta = await fetch(API + "/posts/" + idPost + "/comentarios", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + getToken()
+            },
+            body: JSON.stringify({ texto })
+        });
+
+        if (!resposta.ok) {
+            throw new Error("Erro ao comentar.");
+        }
+        carregarPosts();
+    } catch (erro) {
+        alert(erro.message);
+    }
+}
+
+async function excluirrComentario(idPost, idComentario) {
+    try {
+        if (!confirm("Deseja excluir o comentário?")) {
+            return;
+        }
+        let resposta = await fetch(
+            API + "/posts/" + idPost + "/comentarios/" + idComentario,
+            {
+                method: "DELETE",
+                headers: {
+                    "Authorization": "Bearer " + getToken()
+                }
+            }
+        );
+
+        if (!resposta.ok) {
+            throw new Error("Erro ao excluir comentário.");
+        }
+        carregarPosts();
+    } catch (erro) {
+        alert(erro.message);
+    }
+}
+
+function abrirModalEditarComentario(idPost, idComentario, textoAtual) {
+    document.getElementById("editTextoComentario").value = textoAtual;
+    document.getElementById("erroEditComentario").textContent = "";
+
+    document.getElementById("btnSalvarComentario").onclick = function () {
+        salvarComentarioEditado(idPost, idComentario);
+    };
+
+    document.getElementById("modalEditarComentario").classList.remove("escondido");
+}
+
+async function salvarComentarioEditado(idPost, idComentario) {
+    try {
+        let texto = document.getElementById("editTextoComentario").value.trim();
+        if (!texto) {
+            throw new Error("Digite um comentário.");
+        }
+        let resposta = await fetch(
+            API + "/posts/" + idPost + "/comentarios/" + idComentario,
+            {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + getToken()
+                },
+                body: JSON.stringify({ texto })
+            }
+        );
+
+        if (!resposta.ok) {
+            throw new Error("Erro ao editar comentário.");
+        }
+        fecharModal("modalEditarComentario");
+        carregarPosts();
+
+    } catch (erro) {
+        document.getElementById("erroEditComentario").textContent = erro.message;
+    }
+}
