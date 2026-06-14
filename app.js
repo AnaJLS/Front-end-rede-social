@@ -390,3 +390,59 @@ function toggleLike(postId) {
     })
     .catch(function () { alert('Erro de conexão.'); });
 }
+
+// UTILITÁRIOS
+function fecharModal(modalId) {
+  document.getElementById(modalId).classList.add('escondido');
+}
+
+document.addEventListener('click', function (e) {
+  if (e.target.classList.contains('modal-overlay')) {
+    e.target.classList.add('escondido');
+  }
+});
+
+function criarAvatarHTML(usuario, pequeno) {
+  var cls = 'avatar' + (pequeno ? ' avatar-pequeno' : '');
+  if (usuario && usuario.img) {
+    return '<img class="' + cls + '" src="' + escapeHtml(usuario.img) +
+      '" alt="Avatar" onerror="this.outerHTML=criarAvatarInicialHTML(\'' +
+      escapeHtml((usuario.nome || '?')[0].toUpperCase()) + '\',' + pequeno + ')" />';
+  }
+  var inicial = usuario && usuario.nome ? usuario.nome[0].toUpperCase() : '?';
+  return criarAvatarInicialHTML(inicial, pequeno);
+}
+
+function criarAvatarInicialHTML(inicial, pequeno) {
+  var cls = 'avatar-default' + (pequeno ? ' pequeno' : '');
+  return '<div class="' + cls + '">' + escapeHtml(inicial) + '</div>';
+}
+
+function formatarData(isoStr) {
+  if (!isoStr) return '';
+  var d = new Date(isoStr);
+  if (isNaN(d)) return isoStr;
+
+  var agora    = new Date();
+  var diffMs   = agora - d;
+  var diffMin  = Math.floor(diffMs / 60000);
+  var diffHr   = Math.floor(diffMin / 60);
+  var diffDias = Math.floor(diffHr / 24);
+
+  if (diffMin < 1)   return 'agora mesmo';
+  if (diffMin < 60)  return diffMin + ' min atrás';
+  if (diffHr  < 24)  return diffHr  + 'h atrás';
+  if (diffDias < 7)  return diffDias + (diffDias === 1 ? ' dia atrás' : ' dias atrás');
+
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function escapeHtml(str) {
+  if (typeof str !== 'string') return String(str || '');
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
