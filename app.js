@@ -162,3 +162,231 @@ function renderizarAvatarCriarPost(user) {
     el.style.display = 'none';
   }
 }
+
+var cacheUsuarios = {};
+
+function carregarPosts() {
+  fetch(API + '/usuarios')
+    .then(function (r) { return r.json(); })
+    .then(function (usuarios) {
+      if (Array.isArray(usuarios)) {
+        usuarios.forEach(function (u) { cacheUsuarios[u.id] = u; });
+      }
+      return fetch(API + '/posts');
+    })
+    .then(function (r) {
+      if (!r.ok) {
+        document.getElementById('feed').innerHTML =
+          '<div class="sem-posts">Nenhum post ainda. Seja o primeiro! ✨</div>';
+        return;
+      }
+      return r.json();
+    })
+    .then(function (posts) {
+      if (!posts) return;
+      renderizarFeed(posts);
+    })
+    .catch(function () {
+      document.getElementById('feed').innerHTML =
+        '<div class="sem-posts">Erro ao carregar posts. Verifique se o servidor está ativo.</div>';
+    });
+}
+
+function renderizarFeed(posts) {
+  var feed = document.getElementById('feed');
+  if (!posts.length) {
+    feed.innerHTML = '<div class="sem-posts">Nenhum post ainda. Seja o primeiro! ✨</div>';
+    return;
+  }
+
+  var html = '';
+  var ordenados = posts.slice().reverse();
+  ordenados.forEach(function (post) {
+    html += renderizarPostHTML(post);
+  });
+  feed.innerHTML = html;
+}
+
+function renderizarPostHTML(post) {
+  var user       = getUsuarioLogado();
+  var autorInfo  = cacheUsuarios[post.usuario] || { nome: 'Usuário #' + post.usuario };
+  var ehDono     = user && user.id === post.usuario;
+  var jaLikei    = user && post.likes && post.likes.some(function (l) { return l.usuario === user.id; });
+  var qtdLikes   = post.likes ? post.likes.length : 0;
+  var qtdComents = post.comentarios ? post.comentarios.length : 0;
+
+  var botoesAcao = '';
+  if (ehDono) {
+    botoesAcao =
+      '<button class="btn-acao" onclick="abrirModalEditarPost(' + post.id + ')">✏️ Editar</button>' +
+      '<button class="btn-perigo" onclick="deletarPost(' + post.id + ')">🗑 Excluir</button>';
+  }
+
+  var imagemHTML = '';
+  if (post.img) {
+    imagemHTML = '<img src="' + escapeHtml(post.img) + '" class="post-imagem" alt="imagem do post" onerror="this.style.display=\'none\'" />';
+  }
+
+  var textoHTML = '';
+  if (post.texto) {
+    textoHTML = '<div class="post-texto">' + escapeHtml(post.texto) + '</div>';
+  }
+
+  var badgeEditado = post.editado ? '<span class="badge-editado">editado</span>' : '';
+
+  return (
+    '<div class="post-card" id="post-' + post.id + '">' +
+      '<div class="post-header">' +
+        '<div class="post-autor">' +
+          criarAvatarHTML(autorInfo, false) +
+          '<div class="post-info-autor">' +
+            '<div class="nome">' + escapeHtml(autorInfo.nome) + badgeEditado + '</div>' +
+            '<div class="data">' + formatarData(post.data) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="post-acoes-menu">' + botoesAcao + '</div>' +
+      '</div>' +
+      textoHTML +
+      imagemHTML +
+      '<div class="post-contadores">' +
+        '<span>' + qtdLikes + (qtdLikes === 1 ? ' curtida' : ' curtidas') + '</span>' +
+        '<span>' + qtdComents + (qtdComents === 1 ? ' comentário' : ' comentários') + '</span>' +
+      '</div>' +
+      '<div class="post-acoes-bar">' +
+        '<button class="btn-like ' + (jaLikei ? 'curtido' : '') + '" onclick="toggleLike(' + post.id + ')">' +
+          '<span class="icone-like">' + (jaLikei ? '❤️' : '🤍') + '</span> Curtir' +
+        '</button>' +
+        '<button class="btn-comentar" onclick="toggleComentarios(' + post.id + ')">' +
+          '💬 Comentar' +
+        '</button>' +
+      '</div>' +
+      renderizarComentariosHTML(post) +
+    '</div>'
+  );
+}
+
+function criarPost() {
+  var texto  = document.getElementById('textoNovoPost').value.trim();
+  var img    = document.getElementById('imgNovoPost').value.trim();
+  var erroEl = document.getElementById('erroNovoPost');
+
+  erroEl.textContent = '';
+
+  if (!texto && !img) {
+    erroEl.textContent = 'Digite algo ou adicione uma imagem.';
+    return;
+  }
+
+  var body = {};
+  if (texto) body.texto = texto;
+  if (img)   body.img   = img;
+
+  fetch(API + '/posts', {
+    method: 'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': 'Bearer ' + getToken()
+    },
+    body: JSON.stringify(body)
+  })
+    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (r) {
+      if (r.ok) {
+        document.getElementById('textoNovoPost').value = '';
+        document.getElementById('imgNovoPost').value   = '';
+        carregarPosts();
+      } else {
+        erroEl.textContent = r.d.msg || 'Erro ao publicar.';
+      }
+    })
+    .catch(function () { erroEl.textContent = 'Erro de conexão.'; });
+}
+
+function deletarPost(id) {
+  if (!confirm('Tem certeza que deseja excluir este post?')) return;
+
+  fetch(API + '/posts/' + id, {
+    method: 'DELETE',
+    headers: { 'Authorization': 'Bearer ' + getToken() }
+  })
+    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (r) {
+      if (r.ok) {
+        carregarPosts();
+      } else {
+        alert(r.d.msg || 'Erro ao excluir.');
+      }
+    })
+    .catch(function () { alert('Erro de conexão.'); });
+}
+
+var _idPostEditando = null;
+
+function abrirModalEditarPost(id) {
+  fetch(API + '/posts/' + id)
+    .then(function (r) { return r.json(); })
+    .then(function (post) {
+      _idPostEditando = id;
+      document.getElementById('editTextoPost').value = post.texto || '';
+      document.getElementById('editImgPost').value   = post.img   || '';
+      document.getElementById('erroEditPost').textContent = '';
+      document.getElementById('modalEditarPost').classList.remove('escondido');
+    })
+    .catch(function () { alert('Erro ao carregar post.'); });
+}
+
+function salvarEdicaoPost() {
+  var texto  = document.getElementById('editTextoPost').value.trim();
+  var img    = document.getElementById('editImgPost').value.trim();
+  var erroEl = document.getElementById('erroEditPost');
+
+  erroEl.textContent = '';
+
+  if (!texto && !img) {
+    erroEl.textContent = 'O post precisa ter texto ou imagem.';
+    return;
+  }
+
+  var body = {};
+  if (texto) body.texto = texto;
+  if (img)   body.img   = img;
+
+  fetch(API + '/posts/' + _idPostEditando, {
+    method: 'PUT',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': 'Bearer ' + getToken()
+    },
+    body: JSON.stringify(body)
+  })
+    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (r) {
+      if (r.ok) {
+        fecharModal('modalEditarPost');
+        carregarPosts();
+      } else {
+        erroEl.textContent = r.d.msg || 'Erro ao editar.';
+      }
+    })
+    .catch(function () { erroEl.textContent = 'Erro de conexão.'; });
+}
+
+function toggleLike(postId) {
+  if (!estaLogado()) {
+    alert('Você precisa estar logado para curtir.');
+    return;
+  }
+
+  fetch(API + '/posts/' + postId + '/likes', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + getToken() }
+  })
+    .then(function (r) {
+      if (r.ok) {
+        carregarPosts();
+      } else {
+        return r.json().then(function (d) { alert(d.msg || 'Erro.'); });
+      }
+    })
+    .catch(function () { alert('Erro de conexão.'); });
+}
