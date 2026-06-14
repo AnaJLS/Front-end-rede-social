@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ConnectHub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div id="telaAuth" class="tela-auth">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <span class="logo-icon">&#9670;</span>
+        <span class="logo-text">ConnectHub</span>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="tab-btn ativo" onclick="mostrarAba('login')">Entrar</button>
+        <button class="tab-btn" onclick="mostrarAba('cadastro')">Cadastrar</button>
+      </div>
+
+      <div id="abaLogin" class="auth-form">
+        <div class="campo">
+          <label>Login</label>
+          <input type="text" id="loginUsuario" placeholder="Seu login" />
+        </div>
+        <div class="campo">
+          <label>Senha</label>
+          <input type="password" id="loginSenha" placeholder="Sua senha" />
+        </div>
+        <div id="erroLogin" class="msg-erro"></div>
+        <button class="btn-primario" onclick="fazerLogin()">Entrar</button>
+      </div>
+
+      <div id="abaCadastro" class="auth-form escondido">
+        <div class="campo">
+          <label>Nome Completo</label>
+          <input type="text" id="cadNome" placeholder="Seu nome" />
+        </div>
+        <div class="campo">
+          <label>Login</label>
+          <input type="text" id="cadLogin" placeholder="Escolha um login" />
+        </div>
+        <div class="campo">
+          <label>Senha</label>
+          <input type="password" id="cadSenha" placeholder="Escolha uma senha" />
+        </div>
+        <div class="campo">
+          <label>URL da Foto de Perfil <span class="opcional">(opcional)</span></label>
+          <input type="text" id="cadImg" placeholder="https://..." />
+        </div>
+        <div id="erroCadastro" class="msg-erro"></div>
+        <div id="sucessoCadastro" class="msg-sucesso"></div>
+        <button class="btn-primario" onclick="fazerCadastro()">Criar Conta</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="telaApp" class="escondido">
+
+    <nav class="navbar">
+      <div class="navbar-logo">
+        <span class="logo-icon">&#9670;</span>
+        <span class="logo-text">ConnectHub</span>
+      </div>
+      <div class="navbar-usuario" id="navbarUsuario">
+      </div>
+    </nav>
+
+    <main class="app-main">
+
+      <div class="feed-container">
+
+        <div class="card criar-post" id="cardCriarPost">
+          <div class="criar-post-header">
+            <img id="fotoUsuarioCriar" class="avatar" src="" alt="Avatar" />
+            <textarea id="textoNovoPost" placeholder="No que você está pensando?" rows="3"></textarea>
+          </div>
+          <div class="criar-post-footer">
+            <input type="text" id="imgNovoPost" placeholder="URL de imagem (opcional)" class="input-img-post"/>
+            <button class="btn-primario btn-postar" onclick="criarPost()">Publicar</button>
+          </div>
+          <div id="erroNovoPost" class="msg-erro"></div>
+        </div>
+
+        <div id="feed">
+          <div class="carregando">Carregando posts...</div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <div id="modalEditarPost" class="modal-overlay escondido">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Editar Post</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalEditarPost')">&#10005;</button>
+      </div>
+      <div class="campo">
+        <label>Texto</label>
+        <textarea id="editTextoPost" rows="4"></textarea>
+      </div>
+      <div class="campo">
+        <label>URL da Imagem</label>
+        <input type="text" id="editImgPost" />
+      </div>
+      <div id="erroEditPost" class="msg-erro"></div>
+      <div class="modal-footer">
+        <button class="btn-secundario" onclick="fecharModal('modalEditarPost')">Cancelar</button>
+        <button class="btn-primario" onclick="salvarEdicaoPost()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalEditarComentario" class="modal-overlay escondido">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Editar Comentário</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalEditarComentario')">&#10005;</button>
+      </div>
+      <div class="campo">
+        <label>Texto</label>
+        <textarea id="editTextoComentario" rows="3"></textarea>
+      </div>
+      <div id="erroEditComentario" class="msg-erro"></div>
+      <div class="modal-footer">
+        <button class="btn-secundario" onclick="fecharModal('modalEditarComentario')">Cancelar</button>
+        <button class="btn-primario" onclick="salvarEdicaoComentario()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
