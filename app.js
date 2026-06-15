@@ -23,14 +23,19 @@ function estaLogado() {
   return !!getToken();
 }
 
-window.addEventListener('load', function () {
+document.addEventListener("DOMContentLoaded", function () {
+  clickBotoes();
+
   if (estaLogado()) {
     mostrarApp();
   }
-  // Permite enviar login com Enter
-  document.getElementById('loginSenha').addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') fazerLogin();
-  });
+
+  const senhaEl = document.getElementById('loginSenha');
+  if (senhaEl) {
+    senhaEl.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') fazerLogin();
+    });
+  }
 });
 
 
@@ -149,7 +154,9 @@ function renderizarNavbar(user) {
   el.innerHTML =
     criarAvatarHTML(user, false) +
     '<span class="nome-usuario">' + escapeHtml(user.nome) + '</span>' +
-    '<button class="btn-sair" onclick="fazerLogout()">Sair</button>';
+    '<button id="btnLogout" class="btn-sair">Sair</button>';
+
+    document.getElementById('btnLogout').addEventListener('click', fazerLogout);
 }
 
 function renderizarAvatarCriarPost(user) {
@@ -449,8 +456,58 @@ function escapeHtml(str) {
 
 //Parte Comentarioss - funcionando
 
+function renderizarComentariosHTML(post) {
+  var user = getUsuarioLogado();
+  var comentarios = post.comentarios || [];
+
+  var itensHTML = '';
+  comentarios.forEach(function (c) {
+    var autorComent = cacheUsuarios[c.usuario] || { nome: 'Usuário #' + c.usuario };
+    var ehDono = user && user.id === c.usuario;
+    var badgeEditado = c.editado ? '<span class="badge-editado">editado</span>' : '';
+
+    var botoesAcao = '';
+    if (ehDono) {
+      botoesAcao =
+        '<button class="btn-acao" onclick="abrirModalEditarComentario(' + post.id + ',' + c.id + ',\'' + escapeHtml(c.texto) + '\')">✏️</button>' +
+        '<button class="btn-perigo" onclick="excluirComentario(' + post.id + ',' + c.id + ')">🗑</button>';
+    }
+
+    itensHTML +=
+      '<div class="comentario">' +
+        '<div class="comentario-header">' +
+          criarAvatarHTML(autorComent, true) +
+          '<div class="comentario-info">' +
+            '<span class="nome">' + escapeHtml(autorComent.nome) + '</span>' +
+            badgeEditado +
+            '<span class="data">' + formatarData(c.data) + '</span>' +
+          '</div>' +
+          '<div class="comentario-acoes">' + botoesAcao + '</div>' +
+        '</div>' +
+        '<div class="comentario-texto">' + escapeHtml(c.texto) + '</div>' +
+      '</div>';
+  });
+
+  var inputComent = user
+    ? '<div class="comentario-input">' +
+        criarAvatarHTML(user, true) +
+        '<input type="text" id="textoComent-' + post.id + '" placeholder="Escreva um comentário..." />' +
+        '<button class="btn-primario" onclick="criarComentario(' + post.id + ')">Enviar</button>' +
+      '</div>'
+    : '';
+
+  return (
+    '<div class="comentarios-section escondido" id="coments-' + post.id + '">' +
+      itensHTML +
+      inputComent +
+    '</div>'
+  );
+}
+
 function toggleComentarios(postId) {
-    document.getElementById("coments-" + postId).classList.toggle("escondido");
+  const el = document.getElementById("coments-" + postId);
+  if (!el) return;
+  el.classList.toggle("escondido");
 }
 
 async function criarComentario(idPost) {
@@ -478,24 +535,16 @@ async function criarComentario(idPost) {
     }
 }
 
-async function excluirrComentario(idPost, idComentario) {
+async function excluirComentario(idPost, idComentario) {
     try {
-        if (!confirm("Deseja excluir o comentário?")) {
-            return;
-        }
-        let resposta = await fetch(
-            API + "/posts/" + idPost + "/comentarios/" + idComentario,
-            {
-                method: "DELETE",
-                headers: {
-                    "Authorization": "Bearer " + getToken()
-                }
-            }
-        );
+        if (!confirm("Deseja excluir o comentário?")) return;
+        
+        let resposta = await fetch(API + "/comentarios/" + idComentario, {
+            method: "DELETE",
+            headers: { "Authorization": "Bearer " + getToken() }
+        });
 
-        if (!resposta.ok) {
-            throw new Error("Erro ao excluir comentário.");
-        }
+        if (!resposta.ok) throw new Error("Erro ao excluir comentário.");
         carregarPosts();
     } catch (erro) {
         alert(erro.message);
@@ -506,38 +555,58 @@ function abrirModalEditarComentario(idPost, idComentario, textoAtual) {
     document.getElementById("editTextoComentario").value = textoAtual;
     document.getElementById("erroEditComentario").textContent = "";
 
-    document.getElementById("btnSalvarComentario").onclick = function () {
+    const btnSalvar = document.getElementById("btnSalvarComentario");
+
+    //remover listeners antigos
+    const novoBtn = btnSalvar.cloneNode(true);
+    btnSalvar.parentNode.replaceChild(novoBtn, btnSalvar);
+
+    novoBtn.addEventListener("click", function () {
         salvarComentarioEditado(idPost, idComentario);
-    };
+    });
 
     document.getElementById("modalEditarComentario").classList.remove("escondido");
 }
-
 async function salvarComentarioEditado(idPost, idComentario) {
     try {
         let texto = document.getElementById("editTextoComentario").value.trim();
-        if (!texto) {
-            throw new Error("Digite um comentário.");
-        }
-        let resposta = await fetch(
-            API + "/posts/" + idPost + "/comentarios/" + idComentario,
-            {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer " + getToken()
-                },
-                body: JSON.stringify({ texto })
-            }
-        );
+        if (!texto) throw new Error("Digite um comentário.");
 
-        if (!resposta.ok) {
-            throw new Error("Erro ao editar comentário.");
-        }
+        let resposta = await fetch(API + "/comentarios/" + idComentario, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + getToken()
+            },
+            body: JSON.stringify({ texto })
+        });
+
+        if (!resposta.ok) throw new Error("Erro ao editar comentário.");
         fecharModal("modalEditarComentario");
         carregarPosts();
-
     } catch (erro) {
         document.getElementById("erroEditComentario").textContent = erro.message;
     }
+}
+
+function clickBotoes() {
+  //login e cadastro
+  document.getElementById("btnTabLogin").addEventListener("click", () => mostrarAba("login"));
+  document.getElementById("btnTabCadastro").addEventListener("click", () => mostrarAba("cadastro"));
+
+  //autenticação
+  document.getElementById("btnLogin").addEventListener("click", fazerLogin);
+  document.getElementById("btnCadastro").addEventListener("click", fazerCadastro);
+
+  //post
+  document.getElementById("btnCriarPost").addEventListener("click", criarPost);
+
+  //modal do post
+  document.getElementById("btnFecharEditPost").addEventListener("click", () =>fecharModal("modalEditarPost"));
+  document.getElementById("btnCancelarEditPost").addEventListener("click", () =>fecharModal("modalEditarPost"));
+  document.getElementById("btnSalvarEditPost").addEventListener("click", salvarEdicaoPost);
+
+  //modal do comentario
+  document.getElementById("btnFecharEditComentario").addEventListener("click", () => fecharModal("modalEditarComentario"));
+  document.getElementById("btnCancelarEditComentario").addEventListener("click", () => fecharModal("modalEditarComentario"));
 }

@@ -16,8 +16,8 @@
       </div>
 
       <div class="auth-tabs">
-        <button class="tab-btn ativo" onclick="mostrarAba('login')">Entrar</button>
-        <button class="tab-btn" onclick="mostrarAba('cadastro')">Cadastrar</button>
+        <button id="btnTabLogin" class="tab-btn ativo">Entrar</button>
+        <button id="btnTabCadastro" class="tab-btn">Cadastrar</button>
       </div>
 
       <div id="abaLogin" class="auth-form">
@@ -30,7 +30,7 @@
           <input type="password" id="loginSenha" placeholder="Sua senha" />
         </div>
         <div id="erroLogin" class="msg-erro"></div>
-        <button class="btn-primario" onclick="fazerLogin()">Entrar</button>
+        <button id="btnLogin" class="btn-primario">Entrar</button>
       </div>
 
       <div id="abaCadastro" class="auth-form escondido">
@@ -52,7 +52,7 @@
         </div>
         <div id="erroCadastro" class="msg-erro"></div>
         <div id="sucessoCadastro" class="msg-sucesso"></div>
-        <button class="btn-primario" onclick="fazerCadastro()">Criar Conta</button>
+        <button id="btnCadastro" class="btn-primario">Criar Conta</button>
       </div>
     </div>
   </div>
@@ -79,7 +79,7 @@
           </div>
           <div class="criar-post-footer">
             <input type="text" id="imgNovoPost" placeholder="URL de imagem (opcional)" class="input-img-post"/>
-            <button class="btn-primario btn-postar" onclick="criarPost()">Publicar</button>
+            <button id="btnCriarPost" class="btn-primario btn-postar">Publicar</button>
           </div>
           <div id="erroNovoPost" class="msg-erro"></div>
         </div>
@@ -96,7 +96,7 @@
     <div class="modal">
       <div class="modal-header">
         <h3>Editar Post</h3>
-        <button class="btn-fechar" onclick="fecharModal('modalEditarPost')">&#10005;</button>
+        <button id="btnFecharEditPost" class="btn-fechar">&#10005;</button>
       </div>
       <div class="campo">
         <label>Texto</label>
@@ -108,8 +108,8 @@
       </div>
       <div id="erroEditPost" class="msg-erro"></div>
       <div class="modal-footer">
-        <button class="btn-secundario" onclick="fecharModal('modalEditarPost')">Cancelar</button>
-        <button class="btn-primario" onclick="salvarEdicaoPost()">Salvar</button>
+        <button id="btnCancelarEditPost" class="btn-secundario">Cancelar</button>
+        <button id="btnSalvarEditPost" class="btn-primario">Salvar</button>
       </div>
     </div>
   </div>
@@ -118,7 +118,7 @@
     <div class="modal">
       <div class="modal-header">
         <h3>Editar Comentário</h3>
-        <button class="btn-fechar" onclick="fecharModal('modalEditarComentario')">&#10005;</button>
+        <button id="btnFecharEditComentario" class="btn-fechar">&#10005;</button>
       </div>
       <div class="campo">
         <label>Texto</label>
@@ -126,7 +126,7 @@
       </div>
       <div id="erroEditComentario" class="msg-erro"></div>
       <div class="modal-footer">
-        <button class="btn-secundario" onclick="fecharModal('modalEditarComentario')">Cancelar</button>
+        <button id="btnCancelarEditComentario" class="btn-secundario">Cancelar</button>
         <button id="btnSalvarComentario" class="btn-primario">Salvar</button>
       </div>
     </div>
